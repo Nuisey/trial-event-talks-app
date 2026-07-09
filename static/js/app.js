@@ -24,8 +24,18 @@ const closeModalBtn = document.getElementById('close-modal');
 const cancelTweetBtn = document.getElementById('cancel-tweet');
 const postTweetBtn = document.getElementById('post-tweet-btn');
 
+// Theme Switch
+const themeToggle = document.getElementById('theme-toggle');
+
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
+    // Check and apply saved theme preference on page load
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    if (themeToggle) {
+        themeToggle.checked = (savedTheme === 'light');
+    }
+
     fetchReleases(false);
     setupEventListeners();
 });
@@ -74,6 +84,21 @@ function setupEventListeners() {
 
     // Click "Post to X"
     postTweetBtn.addEventListener('click', handlePostTweet);
+
+    // Theme Toggle Switch
+    if (themeToggle) {
+        themeToggle.addEventListener('change', (e) => {
+            const newTheme = e.target.checked ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+    }
+
+    // Export CSV Button
+    const exportCsvBtn = document.getElementById('export-csv-btn');
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener('click', exportToCSV);
+    }
 }
 
 // Fetch Releases from Flask API
@@ -257,7 +282,11 @@ function createCardHtml(item) {
             <div class="release-body">
                 ${item.html}
             </div>
-            <div class="release-actions">
+            <div class="release-actions" style="display: flex; gap: 0.5rem;">
+                <button class="action-btn copy-btn" onclick="copyToClipboard('${item.id}', this)" title="Copy summary to clipboard">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="copy-icon"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Copy</span>
+                </button>
                 <button class="action-btn tweet-btn" onclick="openTweetComposer('${item.id}')">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
                     <span>Draft Tweet</span>
@@ -367,4 +396,103 @@ function escapeHtml(str) {
               .replace(/>/g, '&gt;')
               .replace(/"/g, '&quot;')
               .replace(/'/g, '&#039;');
+}
+
+// Copy update details to clipboard
+function copyToClipboard(itemId, buttonEl) {
+    const item = allReleaseItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = item.html;
+    let plainText = tempDiv.textContent || tempDiv.innerText || '';
+    plainText = plainText.replace(/\s+/g, ' ').trim();
+
+    const clipboardText = `[BigQuery ${item.type}] ${item.date}\n${plainText}\n\nSource: ${item.link}`;
+
+    navigator.clipboard.writeText(clipboardText).then(() => {
+        // Visual feedback
+        const label = buttonEl.querySelector('span');
+        const originalText = label.textContent;
+        const originalIcon = buttonEl.innerHTML;
+        
+        buttonEl.innerHTML = `
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#10b981" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span style="color: #10b981;">Copied!</span>
+        `;
+        buttonEl.disabled = true;
+
+        setTimeout(() => {
+            buttonEl.innerHTML = originalIcon;
+            buttonEl.disabled = false;
+        }, 1800);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        alert('Could not copy to clipboard. Please copy manually.');
+    });
+}
+
+// Helper to filter items for export matching current UI states
+function getFilteredItems() {
+    let filtered = allReleaseItems;
+    
+    if (currentFilter !== 'all') {
+        filtered = filtered.filter(item => item.type.toLowerCase() === currentFilter);
+    }
+    
+    if (currentSearchQuery) {
+        filtered = filtered.filter(item => {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = item.html;
+            const plainText = tempDiv.textContent || tempDiv.innerText || '';
+            
+            return item.date.toLowerCase().includes(currentSearchQuery) ||
+                   item.type.toLowerCase().includes(currentSearchQuery) ||
+                   plainText.toLowerCase().includes(currentSearchQuery);
+        });
+    }
+    
+    return filtered;
+}
+
+// Export the currently filtered release notes to a CSV document
+function exportToCSV() {
+    const filtered = getFilteredItems();
+    if (filtered.length === 0) {
+        alert("No release notes matches your filters to export!");
+        return;
+    }
+    
+    let csv = "ID,Date,Type,Link,Description\n";
+    filtered.forEach(item => {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = item.html;
+        let plainText = tempDiv.textContent || tempDiv.innerText || '';
+        // Clean text spaces and escape double quotes
+        plainText = plainText.replace(/\s+/g, ' ').replace(/"/g, '""').trim();
+        
+        const row = [
+            `"${escapeCSV(item.id)}"`,
+            `"${escapeCSV(item.date)}"`,
+            `"${escapeCSV(item.type)}"`,
+            `"${escapeCSV(item.link)}"`,
+            `"${plainText}"`
+        ].join(",");
+        csv += row + "\n";
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `bigquery_releases_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function escapeCSV(str) {
+    if (!str) return '';
+    return str.replace(/"/g, '""');
 }

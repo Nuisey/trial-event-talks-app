@@ -39,6 +39,34 @@
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-theme="light"] {
+    --bg-dark: #f3f4f6;
+    --bg-card: rgba(255, 255, 255, 0.75);
+    --border-color: rgba(0, 0, 0, 0.08);
+    --border-hover: rgba(0, 0, 0, 0.16);
+    
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-muted: #8e9aa8;
+    
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    
+    --color-feature-bg: rgba(16, 185, 129, 0.08);
+    --color-feature-border: rgba(16, 185, 129, 0.15);
+    
+    --color-change-bg: rgba(245, 158, 11, 0.08);
+    --color-change-border: rgba(245, 158, 11, 0.15);
+    
+    --color-deprecation-bg: rgba(239, 68, 68, 0.08);
+    --color-deprecation-border: rgba(239, 68, 68, 0.15);
+    
+    --color-other-bg: rgba(59, 130, 246, 0.08);
+    --color-other-border: rgba(59, 130, 246, 0.15);
+}
+
+
 /* Global Reset & Base */
 * {
     margin: 0;
@@ -754,11 +782,154 @@ body {
     .status-panel {
         width: 100%;
         justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
     }
     
     .filter-wrapper {
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.5rem;
+        gap: 0.85rem;
+        width: 100%;
+    }
+
+    .btn-export {
+        width: 100%;
     }
 }
+
+/* Theme Toggle Switch */
+.theme-switch-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.theme-switch {
+    display: inline-block;
+    height: 32px;
+    position: relative;
+    width: 58px;
+    cursor: pointer;
+}
+
+.theme-switch input {
+    display: none;
+}
+
+.slider {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    bottom: 0;
+    cursor: pointer;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider::before {
+    background-color: var(--text-primary);
+    bottom: 3px;
+    content: "";
+    height: 24px;
+    left: 3px;
+    position: absolute;
+    transition: var(--transition-smooth);
+    width: 24px;
+    z-index: 2;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.slider.round::before {
+    border-radius: 50%;
+}
+
+input:checked + .slider::before {
+    transform: translateX(26px);
+}
+
+.slider-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    z-index: 1;
+    transition: var(--transition-smooth);
+}
+
+.slider-icon.sun {
+    color: var(--color-change);
+}
+
+.slider-icon.moon {
+    color: var(--text-muted);
+}
+
+/* Specific Light Mode Styling Overrides */
+[data-theme="light"] .logo-text h1 {
+    background: linear-gradient(135deg, #111827 0%, #4f46e5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] .bg-glow-1 {
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, rgba(124, 58, 237, 0.02) 70%, transparent 100%);
+}
+
+[data-theme="light"] .bg-glow-2 {
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.04) 0%, rgba(59, 130, 246, 0.01) 70%, transparent 100%);
+}
+
+[data-theme="light"] .search-wrapper input {
+    background-color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .search-wrapper input:focus {
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+[data-theme="light"] .modal-overlay {
+    background-color: rgba(243, 244, 246, 0.8);
+}
+
+[data-theme="light"] .twitter-preview {
+    background-color: #f7f9fa;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .twitter-preview textarea {
+    color: #0f1419;
+}
+
+[data-theme="light"] .tweet-avatar {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #0f1419;
+}
+
+[data-theme="light"] .tweet-author {
+    color: #0f1419;
+}
+
+[data-theme="light"] .release-body code {
+    background-color: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    color: #db2777;
+}
+
+[data-theme="light"] .close-modal-btn:hover,
+[data-theme="light"] .action-btn:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
